@@ -16,6 +16,7 @@ OPTIONAL:
         --nodes number_of_nodes (if using aura / tendermint) Default: 2
         --ethstats - Enable ethstats monitoring of authority nodes. Default: Off
         --expose - Expose a specific container on ports 8180 / 8545 / 30303. Default: Config specific
+	--entrypoint - Use custom entrypoint for docker container e.g. /home/parity/bin/parity
 
 NOTE:
     input.json - Custom spec files can be inserted by specifiying the path to the json file.
@@ -49,14 +50,20 @@ create_node_params() {
 	fi
 
 	if [ ! -f $DEST_DIR/password ]; then
-		echo '' >$DEST_DIR/password
+		openssl rand -base64 12 >$DEST_DIR/password
 	fi
 	./config/utils/keygen.sh $DEST_DIR
 
+<<<<<<< HEAD
 	local SPEC_FILE=$(mktemp $DEST_DIR/spec.XXXXXXXXX)
 	gsed "s/CHAIN_NAME/$CHAIN_NAME/g" config/spec/example.spec >$SPEC_FILE
 	parity --chain $SPEC_FILE --keys-path $DEST_DIR/ account new --password $DEST_DIR/password >$DEST_DIR/address.txt
 	rm $SPEC_FILE
+=======
+	PASSWORD=$(cat $DEST_DIR/password)
+	PRIV_KEY=$(cat $DEST_DIR/key.priv)
+	./ethstore insert ${PRIV_KEY} $DEST_DIR/password --dir $DEST_DIR/parity >$DEST_DIR/address.txt
+>>>>>>> 4050ea19f2262d636fcbb698bdd911c6748f34b1
 
 	echo "NETWORK_NAME=$CHAIN_NAME" >.env
 
@@ -293,6 +300,10 @@ while [ "$1" != "" ]; do
 		shift
 		CHAIN_NETWORK=$1
 		;;
+	--entrypoint)
+		shift
+		ENTRYPOINT=$1
+		;;
 	-h | --help)
 		help
 		exit
@@ -365,6 +376,19 @@ elif [ "$CHAIN_ENGINE" == "aura" ] || [ "$CHAIN_ENGINE" == "validatorset" ] || [
 else
 
 	echo "Could not find spec file: $CHAIN_ENGINE"
+fi
+
+if [ ! -z $PARITY_RELEASE ]; then
+    echo "Custom release ${PARITY_RELEASE} selected. WARNING: This may not be compatible with all parity docker images"
+	DOCKER_TMP=$(mktemp)
+	cat docker-compose.yml | sed -e "s@image: parity/parity:stable@image: parity/parity:${PARITY_RELEASE}@g" > $DOCKER_TMP
+	mv $DOCKER_TMP docker-compose.yml
+fi
+
+if [ ! -z $ENTRYPOINT ]; then
+    ENTRYPOINT_TMP=$(mktemp)
+	cat docker-compose.yml | sed -e "s@user: root@user: root\n       entrypoint: ${ENTRYPOINT}@g" > $ENTRYPOINT_TMP
+	mv $ENTRYPOINT_TMP docker-compose.yml
 fi
 
 select_exposed_container

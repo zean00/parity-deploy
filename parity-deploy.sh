@@ -54,16 +54,13 @@ create_node_params() {
 	fi
 	./config/utils/keygen.sh $DEST_DIR
 
-<<<<<<< HEAD
-	local SPEC_FILE=$(mktemp $DEST_DIR/spec.XXXXXXXXX)
-	gsed "s/CHAIN_NAME/$CHAIN_NAME/g" config/spec/example.spec >$SPEC_FILE
-	parity --chain $SPEC_FILE --keys-path $DEST_DIR/ account new --password $DEST_DIR/password >$DEST_DIR/address.txt
-	rm $SPEC_FILE
-=======
+	# local SPEC_FILE=$(mktemp $DEST_DIR/spec.XXXXXXXXX)
+	# gsed "s/CHAIN_NAME/$CHAIN_NAME/g" config/spec/example.spec >$SPEC_FILE
+	# parity --chain $SPEC_FILE --keys-path $DEST_DIR/ account new --password $DEST_DIR/password >$DEST_DIR/address.txt
+	# rm $SPEC_FILE
 	PASSWORD=$(cat $DEST_DIR/password)
 	PRIV_KEY=$(cat $DEST_DIR/key.priv)
 	./ethstore insert ${PRIV_KEY} $DEST_DIR/password --dir $DEST_DIR/parity >$DEST_DIR/address.txt
->>>>>>> 4050ea19f2262d636fcbb698bdd911c6748f34b1
 
 	echo "NETWORK_NAME=$CHAIN_NAME" >.env
 

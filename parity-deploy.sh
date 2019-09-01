@@ -38,13 +38,11 @@ check_packages() {
 }
 
 genpw() {
-
 	openssl rand -base64 12
 
 }
 
 create_node_params() {
-
 	local DEST_DIR=deployment/$1
 	if [ ! -d $DEST_DIR ]; then
 		mkdir -p $DEST_DIR
@@ -55,8 +53,8 @@ create_node_params() {
 	fi
 	./config/utils/keygen.sh $DEST_DIR
 
-	local SPEC_FILE=$(mktemp -p $DEST_DIR spec.XXXXXXXXX)
-	sed "s/CHAIN_NAME/$CHAIN_NAME/g" config/spec/example.spec >$SPEC_FILE
+	local SPEC_FILE=$(mktemp $DEST_DIR/spec.XXXXXXXXX)
+	gsed "s/CHAIN_NAME/$CHAIN_NAME/g" config/spec/example.spec >$SPEC_FILE
 	parity --chain $SPEC_FILE --keys-path $DEST_DIR/ account new --password $DEST_DIR/password >$DEST_DIR/address.txt
 	rm $SPEC_FILE
 
@@ -65,20 +63,17 @@ create_node_params() {
 }
 
 create_reserved_peers_poa() {
-
 	PUB_KEY=$(cat deployment/$1/key.pub)
 	echo "enode://$PUB_KEY@host$1:30303" >>deployment/chain/reserved_peers
 }
 
 create_reserved_peers_instantseal() {
-
 	PUB_KEY=$(cat deployment/$1/key.pub)
 	echo "enode://$PUB_KEY@127.0.0.1:30303" >>deployment/chain/reserved_peers
 
 }
 
 build_spec() {
-
 	display_header
 	display_name
 	display_engine
@@ -90,12 +85,11 @@ build_spec() {
 }
 
 build_docker_config_poa() {
-
 	echo "version: '2.0'" >docker-compose.yml
 	echo "services:" >>docker-compose.yml
 
 	for x in $(seq 1 $CHAIN_NODES); do
-		cat config/docker/authority.yml | sed -e "s/NODE_NAME/$x/g" | sed -e "s@-d /home/parity/data@-d /home/parity/data $PARITY_OPTIONS@g" >>docker-compose.yml
+		cat config/docker/authority.yml | gsed -e "s/NODE_NAME/$x/g" | gsed -e "s@-d /home/parity/data@-d /home/parity/data $PARITY_OPTIONS@g" >>docker-compose.yml
 		mkdir -p data/$x
 	done
 
@@ -116,7 +110,7 @@ build_docker_config_ethstats() {
 
 build_docker_config_instantseal() {
 
-	cat config/docker/instantseal.yml | sed -e "s@-d /home/parity/data@-d /home/parity/data $PARITY_OPTIONS@g" >docker-compose.yml
+	cat config/docker/instantseal.yml | gsed -e "s@-d /home/parity/data@-d /home/parity/data $PARITY_OPTIONS@g" >docker-compose.yml
 
 	build_docker_config_ethstats
 
@@ -128,7 +122,6 @@ build_docker_config_instantseal() {
 }
 
 build_docker_client() {
-
 	if [ "$CLIENT" == "1" ]; then
 		create_node_params client
 		cp config/spec/client.toml deployment/client/
@@ -170,26 +163,25 @@ display_footer() {
 
 display_name() {
 
-	cat config/spec/name | sed -e "s/CHAIN_NAME/$CHAIN_NAME/g"
+	cat config/spec/name | gsed -e "s/CHAIN_NAME/$CHAIN_NAME/g"
 }
 
 create_node_config_poa() {
-
 	ENGINE_SIGNER=$(cat deployment/$1/address.txt)
-	cat config/spec/authority_round.toml | sed -e "s/ENGINE_SIGNER/$ENGINE_SIGNER/g" >deployment/$1/authority.toml
+	cat config/spec/authority_round.toml | gsed -e "s/ENGINE_SIGNER/$ENGINE_SIGNER/g" >deployment/$1/authority.toml
 
 }
 
 create_node_config_instantseal() {
 
 	ENGINE_SIGNER=$(cat deployment/$1/address.txt)
-	cat config/spec/instant_seal.toml | sed -e "s/ENGINE_SIGNER/$ENGINE_SIGNER/g" >deployment/$1/authority.toml
+	cat config/spec/instant_seal.toml | gsed -e "s/ENGINE_SIGNER/$ENGINE_SIGNER/g" >deployment/$1/authority.toml
 
 }
 
 expose_container() {
 
-	sed -i "s@container_name: $1@&\n       ports:\n       - 8080:8080\n       - 8180:8180\n       - 8545:8545\n       - 8546:8546\n       - 30303:30303@g" docker-compose.yml
+	gsed -i "s@container_name: $1@&\n       ports:\n       - 8080:8080\n       - 8180:8180\n       - 8545:8545\n       - 8546:8546\n       - 30303:30303@g" docker-compose.yml
 
 }
 
@@ -218,8 +210,8 @@ display_engine() {
 			VALIDATORS="$VALIDATORS \"$VALIDATOR\","
 		done
 		# Remove trailing , from validator list
-		VALIDATORS=$(echo $VALIDATORS | sed 's/\(.*\),.*/\1/')
-		cat config/spec/engine/$CHAIN_ENGINE | sed -e "s/0x0000000000000000000000000000000000000000/$VALIDATORS/g"
+		VALIDATORS=$(echo $VALIDATORS | gsed 's/\(.*\),.*/\1/')
+		cat config/spec/engine/$CHAIN_ENGINE | gsed -e "s/0x0000000000000000000000000000000000000000/$VALIDATORS/g"
 		;;
 	*)
 		echo "Unknown engine: $CHAIN_ENGINE"
@@ -242,7 +234,28 @@ display_genesis() {
 
 display_accounts() {
 
-	cat config/spec/accounts/$CHAIN_ENGINE
+	#cat config/spec/accounts/$CHAIN_ENGINE
+	echo '"accounts": {
+			"0x0000000000000000000000000000000000000001": { "balance": "1", "builtin": { "name": "ecrecover", "pricing": { "linear": { "base": 3000, "word": 0 } } } },
+			"0x0000000000000000000000000000000000000002": { "balance": "1", "builtin": { "name": "sha256", "pricing": { "linear": { "base": 60, "word": 12 } } } },
+			"0x0000000000000000000000000000000000000003": { "balance": "1", "builtin": { "name": "ripemd160", "pricing": { "linear": { "base": 600, "word": 120 } } } },
+			"0x0000000000000000000000000000000000000004": { "balance": "1", "builtin": { "name": "identity", "pricing": { "linear": { "base": 15, "word": 3 } } } },
+			"0x0000000000000000000000000000000000000005": { "builtin": { "name": "modexp", "activate_at": "0x0", "pricing": { "modexp": { "divisor": 20 } } } },
+			"0x0000000000000000000000000000000000000006": { "builtin": { "name": "alt_bn128_add", "activate_at": "0x0", "pricing": { "linear": { "base": 500, "word": 0 } } } },
+			"0x0000000000000000000000000000000000000007": { "builtin": { "name": "alt_bn128_mul", "activate_at": "0x0", "pricing": { "linear": { "base": 40000, "word": 0 } } } },
+			"0x0000000000000000000000000000000000000008": { "builtin": { "name": "alt_bn128_pairing", "activate_at": "0x0", "pricing": { "alt_bn128_pairing": { "base": 100000, "pair": 80000 } } } },
+			"0x00Ea169ce7e0992960D3BdE6F5D539C955316432": { "balance": "1606938044258990275541962092341162602522202993782792835301376" },'
+		
+	for x in $(seq $CHAIN_NODES); do
+		ADDR=$(cat deployment/$x/address.txt)
+		BAL='"'$ADDR'": { "balance": "1606938044258990275541962092341162602522202993782792835301376" }'
+		if [ $x -ne $CHAIN_NODES ]; then
+			echo '			'$BAL","
+		else
+			echo '			'$BAL
+		fi
+	done
+	echo "	}"
 
 }
 
@@ -300,17 +313,16 @@ if [ ! -f /usr/bin/parity ] || [ -n "$PARITY_RELEASE" ]; then
 
 	if [ -z "$PARITY_RELEASE" ]; then
 		echo "NO custom parity build set, downloading stable"
-		bash <(curl https://get.parity.io -Lk -r stable)
+		#bash <(curl https://get.parity.io -Lk -r stable)
 	else
 		echo "Custom parity build set: $PARITY_RELEASE"
-		curl -o parity-download.sh https://get.parity.io -Lk
-		bash parity-download.sh -r $PARITY_RELEASE
+		#curl -o parity-download.sh https://get.parity.io -Lk
+		#bash parity-download.sh -r $PARITY_RELEASE
 	fi
 fi
 
 mkdir -p deployment/chain
-check_packages
-
+#check_packages
 echo $CHAIN_ENGINE | grep -q toml
 if [ $? -eq 0 ]; then
 	./customchain/generate.py "$CHAIN_ENGINE"
@@ -319,10 +331,10 @@ fi
 
 if [ ! -z "$CHAIN_NETWORK" ]; then
 	if [ ! -z "$PARITY_OPTIONS" ]; then
-		cat config/docker/chain.yml | sed -e "s/CHAIN_NAME/$CHAIN_NETWORK/g" | sed -e "s@-d /home/parity/data@-d /home/parity/data $PARITY_OPTIONS@g" >docker-compose.yml
+		cat config/docker/chain.yml | gsed -e "s/CHAIN_NAME/$CHAIN_NETWORK/g" | gsed -e "s@-d /home/parity/data@-d /home/parity/data $PARITY_OPTIONS@g" >docker-compose.yml
 
 	else
-		cat config/docker/chain.yml | sed -e "s/CHAIN_NAME/$CHAIN_NETWORK/g" >docker-compose.yml
+		cat config/docker/chain.yml | gsed -e "s/CHAIN_NAME/$CHAIN_NETWORK/g" >docker-compose.yml
 	fi
 
 elif [ "$CHAIN_ENGINE" == "dev" ]; then

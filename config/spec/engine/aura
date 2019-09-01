@@ -1,10 +1,13 @@
     	"engine": {
         "authorityRound": {
             "params": {
-                "stepDuration": "2",
+                "stepDuration": "1",
                 "validators" : {
                     "list": [ 0x0000000000000000000000000000000000000000 ]
-                }
+                },
+                "blockReward": "10",
+                "emptyStepsTransition" : "5",
+				"maximumEmptySteps": "10"
             }
         }
     },

@@ -99,10 +99,19 @@ build_docker_config_poa() {
 
 	build_docker_config_ethstats
 
-	cat $DOCKER_INCLUDE >>docker-compose.yml
+	#cat $DOCKER_INCLUDE >>docker-compose.yml
 
 	chown -R $USER data/
 
+}
+
+build_docker_config_ss() {
+	for x in $(seq 1 $SECRETSTORE); do
+		cat config/docker/ss.yml | gsed -e "s/IP/$x/g" | gsed -e "s/NODE_NAME/ss$x/g" | gsed -e "s@-d /home/parity/data@-d /home/parity/data $PARITY_OPTIONS@g" >>docker-compose.yml
+		mkdir -p data/ss$x
+	done
+
+	chown -R $USER data/
 }
 
 build_docker_config_ethstats() {
@@ -186,6 +195,12 @@ create_node_config_instantseal() {
 expose_container() {
 
 	gsed -i "s@container_name: $1@&\n       ports:\n       - 8080:8080\n       - 8180:8180\n       - 8545:8545\n       - 8546:8546\n       - 30303:30303@g" docker-compose.yml
+
+}
+
+expose_ss() {
+
+	gsed -i "s@container_name: $1@&\n       ports:\n       - 8010:8010@g" docker-compose.yml
 
 }
 
@@ -301,6 +316,10 @@ while [ "$1" != "" ]; do
 		shift
 		ENTRYPOINT=$1
 		;;
+	--secretstore)
+		shift
+		SECRETSTORE=$1
+		;;
 	-h | --help)
 		help
 		exit
@@ -361,6 +380,10 @@ elif [ "$CHAIN_ENGINE" == "aura" ] || [ "$CHAIN_ENGINE" == "validatorset" ] || [
 		done
 		build_docker_config_poa
 		build_docker_client
+		if [ ! -z $SECRETSTORE ]; then
+			build_docker_config_ss
+		fi
+		cat $DOCKER_INCLUDE >>docker-compose.yml
 	fi
 
 	if [ "$CHAIN_ENGINE" == "aura" ] || [ "$CHAIN_ENGINE" == "validatorset" ] || [ "$CHAIN_ENGINE" == "tendermint" ]; then
@@ -373,6 +396,15 @@ elif [ "$CHAIN_ENGINE" == "aura" ] || [ "$CHAIN_ENGINE" == "validatorset" ] || [
 else
 
 	echo "Could not find spec file: $CHAIN_ENGINE"
+fi
+
+if [ ! -z $SECRETSTORE ]; then
+	for x in $(seq $SECRETSTORE); do
+		create_node_params ss$x
+	done
+
+	gsed -i -e "s@image: parity/parity:stable@image: zean00/parity:ss@g" docker-compose.yml
+	expose_ss ss1
 fi
 
 if [ ! -z $PARITY_RELEASE ]; then

@@ -1,7 +1,7 @@
     	"engine": {
         "authorityRound": {
             "params": {
-                "stepDuration": "1",
+                "stepDuration": "3",
                 "validators" : {
                     "list": [ 0x0000000000000000000000000000000000000000 ]
                 },

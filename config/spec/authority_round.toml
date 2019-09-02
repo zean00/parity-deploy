@@ -27,5 +27,8 @@ origins = ["http://127.0.0.1:8180"]
 apis = ["all"]
 hosts = ["all"]
 
+[secretstore]
+disable = true # users do not run a secret store node
+
 [misc]
 logging = "own_tx=trace, engine"

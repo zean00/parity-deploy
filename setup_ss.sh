@@ -6,7 +6,7 @@ green=`tput setaf 2`
 reset=`tput sgr0`
 
 # cleanup any previous attempts of running this script
-docker-compose down
+#docker-compose down
 
 # get up to speed
 #docker-compose pull ss1 alice
@@ -33,10 +33,12 @@ do
 
     # # grabbing the enode and server public key from the logs
 
-    sslog[$i]=$(gtimeout 10s docker-compose up ss$i)
-    ssp[$i]=$(echo "${sslog[$i]}"|grep "SecretStore node:"|cut -d "x" -f 2)
+    #sslog[$i]=$(gtimeout 10s docker-compose up ss$i)
+    ssp[$i]=$(cat deployment/ss$i/key.pub)
+    ssE[$i]=$(cat deployment/ss$i/key.pub)
+    #ssp[$i]=$(echo "${sslog[$i]}"|grep "SecretStore node:"|cut -d "x" -f 2)
     #echo ${ssp[$i]}
-    ssE[$i]=$(echo "${sslog[$i]}"|grep "Public node URL:"|cut -d "/" -f 3)
+    #ssE[$i]=$(echo "${sslog[$i]}"|grep "Public node URL:"|cut -d "/" -f 3)
     #ip=$(echo "${ssE[$i]}"|egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}')
     #echo $ip
     #ssp[$i]=${ssp[$i]}@$ip:8011
@@ -69,4 +71,4 @@ do
     gsed -i -e "s#ENODES#$en#g" ${loc[$i]}
 done
 
-docker-compose down
+#docker-compose down

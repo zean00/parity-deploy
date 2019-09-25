@@ -403,7 +403,43 @@ if [ ! -z $SECRETSTORE ]; then
 		create_node_params ss$x
 	done
 
-	gsed -i -e "s@image: parity/parity:stable@image: zean00/parity:ss@g" docker-compose.yml
+	declare -a loc mm mmE mmlog
+	for (( i=1; i<=$SECRETSTORE; i++ ))
+	do
+		# generating good config files 
+		DEST_DIR=deployment/ss$i
+		loc[$i]=$DEST_DIR/ss$i.toml
+		cp config/secret/ss.bak.toml ${loc[$i]}
+		ss[$i]=$(cat $DEST_DIR/address.txt)
+		ssx[$i]=$(echo ${ss[$i]}|cut -d "x" -f 2)
+		gsed -i -e  s,"accountx","${ssx[$i]}",g -e "/self_secret/s/^#//g" ${loc[$i]}
+		ssp[$i]=$(cat deployment/ss$i/key.pub)
+		ssE[$i]=$(cat deployment/ss$i/key.pub)
+	done
+
+	for (( i=1; i<=$SECRETSTORE; i++ ))
+	do
+		# accounts
+		gsed -i -e "/bootnodes/s/^#//g"   -e "/nodes/s/^#//g" ${loc[$i]}
+		en=
+		max=$((SECRETSTORE-1))
+		count=1
+		for (( j=1; j<=$SECRETSTORE; j++ ))
+		do
+			gsed -i -e s,ssp$j,${ssp[$j]},g  ${loc[$i]}
+			if [ $j -ne $i ];then
+				en=${en}enode://${ssE[j]}
+				if [ $count -lt $max ];then
+					en=${en},
+				fi
+				count=$((count+1))
+			fi
+		done
+
+		gsed -i -e "s#ENODES#$en#g" ${loc[$i]}
+	done
+
+	#gsed -i -e "s@image: parity/parity:stable@image: zean00/parity:ss@g" docker-compose.yml
 	expose_ss ss1
 fi
 

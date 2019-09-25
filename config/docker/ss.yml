@@ -1,6 +1,6 @@
    NODE_NAME:
        container_name: NODE_NAME 
-       image: zean00/parity:ss
+       image: oceanprotocol/parity-ethereum:master
        user: root
        working_dir: /home/parity
        volumes:
